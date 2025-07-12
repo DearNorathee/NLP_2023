@@ -14,6 +14,8 @@ from pathlib import Path
 from sklearn.model_selection import cross_val_score
 import joblib
 
+import lightgbm as lgb
+
 def lemmatize(text,model):
     doc = model(text)
     lemmatized = " ".join([token.lemma_ for token in doc])
@@ -299,6 +301,10 @@ y_train, y_test = train_test_split(y_data,test_size=0.2, random_state=RANDOM_STA
 
 y_train = y_train.iloc[:,0]
 y_test = y_test.iloc[:,0]
+
+y_train = y_train.astype('category')
+y_test = y_test.astype('category')
+
 #%% 
 ##################### Setup train test variables ################
 X_train_oversampled,y_train_oversampled = ml_upsampling(X_train_tfidf, y_train)
@@ -340,10 +346,39 @@ else:
     vectorizer_chosen = tfidf_vectorizer
 
 
+
 #%%
 ##################### Train LogisticRegression
-lr_model = LogisticRegression(random_state=RANDOM_STATE)
+lr_model = LogisticRegression(
+    random_state=RANDOM_STATE
+    ,C = 0.01
+    ,penalty ="l2"
+    # ,solver="liblinear"
+    )
 lr_model.fit(X_train_balanced_chosen, y_train_balanced_chosen)
+
+
+
+# from sklearn.model_selection import GridSearchCV
+
+# param_grid = {
+#     "C": [10, 1, 0.1, 0.01],
+#     "penalty": ["l1", "l2"],
+#     "solver": ["liblinear","saga"],
+#     "max_iter": [1000],
+# }
+
+# grid = GridSearchCV(
+#     LogisticRegression(random_state=RANDOM_STATE),
+#     param_grid,
+#     cv=5,
+#     scoring="accuracy",
+#     n_jobs=-1
+# )
+
+# grid.fit(X_train_balanced_chosen, y_train_balanced_chosen)
+# print(grid.best_params_, grid.best_score_)
+
 
 # pred_train_lr = nlp_predict(data_train,lr_model,vectorizer_chosen, col_input= X_COL_NAME,inplace=False)
 # pred_test_lr = nlp_predict(data_test,lr_model,vectorizer_chosen, col_input= X_COL_NAME, inplace=False)
@@ -382,5 +417,61 @@ print(cr_lr_train)
 cr_lr_test = classification_report(y_test, pred_test_lr)
 print(cr_lr_test)
 
+#%%
+############################### Train lightgbm
 
-##################### Train lightgbm
+lgb_train_balanced_data = lgb.Dataset(data=X_train_balanced_chosen, label=y_train_balanced_chosen)
+lgb_test_data = lgb.Dataset(data=X_test_chosen, label=y_test)
+
+params01 = {
+    # 'objective': 'multiclass',
+    # 'metric': 'multi_logloss',
+    # auto numclass
+    # 'num_class': 2,
+    'max_depth':30,
+    'num_leaves': 30,
+    'max_bin': 260,
+    
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    
+    
+    'boosting_type': 'gbdt',
+    'learning_rate': 0.05,
+    'bagging_freq': 5,
+    'verbosity': -1,
+
+    
+    "min_data_in_leaf":100
+}
+
+
+lgb_model = lgb.LGBMClassifier(**params01)
+
+callbacks = [lgb.log_evaluation(period=50)]
+
+
+lgb_model.fit(X_train_balanced_chosen, y_train_balanced_chosen, eval_set=(X_test_chosen, y_test),callbacks=callbacks)
+
+
+# cv_results = lgb.cv(params01, lgb_train_balanced_data,nfold=CV, stratified=True)
+
+y_pred_balanced_train_lgb = lgb_model.predict(X_train_balanced_chosen)
+y_pred_imbalanced_train_lgb = lgb_model.predict(X_train_imbalanced_chosen)
+y_pred_test_lgb = lgb_model.predict(X_test_chosen)
+
+
+plot_confusion_matrix(y_train_balanced_chosen, y_pred_balanced_train_lgb, 'LightGBM - Train(Balanced)',labels)
+plot_confusion_matrix(y_train_imbalanced_chosen, y_pred_imbalanced_train_lgb, 'LightGBM - Train(Original)',labels)
+plot_confusion_matrix(y_test, y_pred_test_lgb, 'LightGBM - Test',labels)
+
+
+print(classification_report(y_train_balanced_chosen, y_pred_balanced_train_lgb))
+# print(confusion_matrix(y_train_balanced_chosen, y_pred_balanced_train))
+
+feat_imp = pd.Series(lgb_model.feature_importances_, index=X_train_balanced_chosen.columns)
+feat_imp.nlargest(30).plot(kind='barh', figsize=(8,10))
+
+
+print(classification_report(y_test, y_pred_test_lgb))
+# print(confusion_matrix(y_test, y_pred_test))
