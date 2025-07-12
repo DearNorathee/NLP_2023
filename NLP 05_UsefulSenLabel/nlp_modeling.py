@@ -1,3 +1,5 @@
+
+#%%
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -251,6 +253,10 @@ def plot_confusion_matrix(y_true, y_pred, title,labels = None):
     plt.ylabel('Actual')
     plt.show()
 
+#%%
+folder_path = r"C:/Users/Norat/OneDrive/D_Code/Python/Python NLP/NLP 01/NLP 05_UsefulSenLabel"
+folder_Path = Path(folder_path)
+
 df_name = 'BigBangSentenceS06_label_ChatGPT.csv'
 RANDOM_STATE = 42
 UPSAMPLING = True
@@ -259,56 +265,106 @@ Y_NAME = 'usefulness'
 NGRAM_RANGE = (1, 2)
 CV = 5
 
+X_tfidf_path = r"C:/Users/Norat/OneDrive/D_Code/Python/Python NLP/NLP 01/NLP 05_UsefulSenLabel/data/BigBangSentenceS06_Tfidf_v01.parquet"
+X_ngram_path = r"C:/Users/Norat/OneDrive/D_Code/Python/Python NLP/NLP 01/NLP 05_UsefulSenLabel/data/BigBangSentenceS06_Tfidf_v01.parquet"
+y_data_path = r"C:/Users/Norat/OneDrive/D_Code/Python/Python NLP/NLP 01/NLP 05_UsefulSenLabel/data/BigBangSentenceS06_y_v01.parquet"
 
-X_train_oversampled,y_train_oversampled = ml_upsampling(X_tfidf, y_train)
+vectorizer_tfidf_path = r"C:/Users/Norat/OneDrive/D_Code/Python/Python NLP/NLP 01/NLP 05_UsefulSenLabel/saved_models/NgramVectorizer.joblib"
+vectorizer_ngram_path = r"C:/Users/Norat/OneDrive/D_Code/Python/Python NLP/NLP 01/NLP 05_UsefulSenLabel/saved_models/TfidfVectorizer.joblib"
+
+#%%
+
+X_tfidf = pd.read_parquet(X_tfidf_path)
+X_ngram =  pd.read_parquet(X_ngram_path)
+y_data = pd.read_parquet(y_data_path)
+
+
+tfidf_vectorizer = joblib.load(vectorizer_tfidf_path)
+tfidf_vectorizer_ngram = joblib.load(vectorizer_ngram_path)
+#%%
+
+# Initialize the TF-IDF vectorizer with n-grams
+
+# X_train_ngram = tfidf_vectorizer_ngram.fit_transform(X_train)
+# X_test_ngram = tfidf_vectorizer_ngram.transform(X_test)
+# y_train_ngram_df = y_train.copy()
+
+# Perform manual oversampling on data with n-grams
+
+X_train_tfidf, X_test_tfidf = train_test_split(X_tfidf,test_size=0.2, random_state=RANDOM_STATE)
+X_train_ngram, X_test_ngram = train_test_split(X_ngram,test_size=0.2, random_state=RANDOM_STATE)
+y_train, y_test = train_test_split(y_data,test_size=0.2, random_state=RANDOM_STATE)
+
+
+# convert y_train, y_test to series
+
+y_train = y_train.iloc[:,0]
+y_test = y_test.iloc[:,0]
+#%% 
+##################### Setup train test variables ################
+X_train_oversampled,y_train_oversampled = ml_upsampling(X_train_tfidf, y_train)
 X_train_oversampled_tfidf = X_train_oversampled.values
-X_train_ngram_oversampled, y_train_ngram_oversampled = ml_upsampling(X_ngram, y_train_ngram_df)
-
-
+X_train_ngram_oversampled, y_train_ngram_oversampled = ml_upsampling(X_train_ngram, y_train)
 # Convert the oversampled DataFrame back to sparse matrix format for training
 X_train_ngram_oversampled_tfidf = X_train_ngram_oversampled.values
 
 
-if ngram_range:
-    if upsampling:
-        X_train_chosen = X_train_ngram_oversampled
-        y_train_chosen = y_train_ngram_oversampled
+if NGRAM_RANGE:
+    if UPSAMPLING:
+        X_train_balanced_chosen = X_train_ngram_oversampled.copy()
+        y_train_balanced_chosen = y_train_ngram_oversampled.copy()
+        X_train_imbalanced_chosen = X_train_ngram.copy()
+        y_train_imbalanced_chosen = y_train.copy()
+
     else:
-        X_train_chosen = X_ngram
-        y_train_chosen = y_train
+        X_train_balanced_chosen = X_train_ngram.copy()
+        y_train_balanced_chosen = y_train.copy()
+        X_train_imbalanced_chosen = X_train_ngram.copy()
+        y_train_imbalanced_chosen = y_train.copy()
         
     X_test_chosen = X_test_ngram
     vectorizer_chosen = tfidf_vectorizer_ngram
 else:
-    if upsampling:
-        X_train_chosen = X_train_oversampled
-        y_train_chosen = y_train_oversampled
+    if UPSAMPLING:
+        X_train_balanced_chosen = X_train_oversampled.copy()
+        y_train_balanced_chosen = y_train_oversampled.copy()
+        X_train_imbalanced_chosen = X_train_tfidf.copy()
+        y_train_imbalanced_chosen = y_train.copy()
     else:
-        X_train_chosen = X_tfidf
-        y_train_chosen = y_train
+        X_train_balanced_chosen = X_train_tfidf.copy()
+        y_train_balanced_chosen = y_train.copy()
+        X_train_imbalanced_chosen = X_train_tfidf.copy()
+        y_train_imbalanced_chosen = y_train.copy()
+
         
     X_test_chosen = X_test_tfidf
     vectorizer_chosen = tfidf_vectorizer
 
 
+#%%
 ##################### Train LogisticRegression
-lr_model = LogisticRegression(random_state=random_state)
-lr_model.fit(X_train_chosen, y_train_chosen)
+lr_model = LogisticRegression(random_state=RANDOM_STATE)
+lr_model.fit(X_train_balanced_chosen, y_train_balanced_chosen)
 
-pred_train_lr = nlp_predict(data_train,lr_model,vectorizer_chosen, col_input= 'portuguese',inplace=False)
-pred_test_lr = nlp_predict(data_test,lr_model,vectorizer_chosen, col_input= 'portuguese', inplace=False)
+# pred_train_lr = nlp_predict(data_train,lr_model,vectorizer_chosen, col_input= X_COL_NAME,inplace=False)
+# pred_test_lr = nlp_predict(data_test,lr_model,vectorizer_chosen, col_input= X_COL_NAME, inplace=False)
+
+pred_train_balance_lr = lr_model.predict(X_train_balanced_chosen)
+pred_train_imbalance_lr = lr_model.predict(X_train_imbalanced_chosen)
+pred_test_lr = lr_model.predict(X_test_chosen)
 
 
-pred_train_lr_prob = nlp_predict_prob(data_train,lr_model,vectorizer_chosen, col_input= 'portuguese',inplace=True)
-pred_test_lr_prob = nlp_predict_prob(data_test,lr_model,vectorizer_chosen, col_input= 'portuguese', inplace=False)
+# pred_train_lr_prob = nlp_predict_prob(data_train,lr_model,vectorizer_chosen, col_input= X_COL_NAME,inplace=True)
+# pred_test_lr_prob = nlp_predict_prob(data_test,lr_model,vectorizer_chosen, col_input= X_COL_NAME, inplace=False)
+pred_train_lr_prob = lr_model.predict_proba(X_train_balanced_chosen)
+pred_test_lr_prob = lr_model.predict_proba(X_test_chosen)
 
-
-tfidf_vectorizer = vectorizer_chosen
-data_in = data_train['portuguese']
+# tfidf_vectorizer = vectorizer_chosen
+# data_in = data_train[X_COL_NAME]
 model = lr_model
 
-data_tfidf = tfidf_vectorizer.transform(data_in)
-prediction = model.predict_proba(data_tfidf)
+# data_tfidf = tfidf_vectorizer.transform(data_in)
+# prediction = model.predict_proba(data_tfidf)
 labels = model.classes_.tolist()
 
 # labels = ['Not Useful','Already Knew','Normal','Useful']
@@ -316,50 +372,16 @@ labels = model.classes_.tolist()
 # cm = confusion_matrix(pred_train_lr[y_name], pred_train_lr['prediction'])
 # cm
 
-plot_confusion_matrix(pred_train_lr[y_name], pred_train_lr['prediction'], 'Logistic Regression - Train',labels)
-plot_confusion_matrix(pred_test_lr[y_name], pred_test_lr['prediction'], 'Logistic Regression - Test',labels)
+plot_confusion_matrix(y_train_balanced_chosen, pred_train_balance_lr, 'Logistic Regression - Train(Balanced)',labels)
+plot_confusion_matrix(y_train_imbalanced_chosen, pred_train_imbalance_lr, 'Logistic Regression - Train(Original)',labels)
+plot_confusion_matrix(y_test, pred_test_lr, 'Logistic Regression - Test',labels)
 
-cr_lr_train = classification_report(pred_train_lr[y_name], pred_train_lr['prediction'])
+
+cr_lr_train = classification_report(y_train_imbalanced_chosen, pred_train_imbalance_lr)
 print(cr_lr_train)
 
-cr_lr_test = classification_report(pred_test_lr[y_name], pred_test_lr['prediction'])
+cr_lr_test = classification_report(y_test, pred_test_lr)
 print(cr_lr_test)
 
-##################### LogisticRegression Multi class specified
-#### seems to have to no different then normal LogisticRegression
 
-# lr_multi = LogisticRegression(multi_class='multinomial')
-# lr_multi.fit(X_train_chosen, y_train_chosen)
-
-# pred_train_lr_multi = nlp_predict(data_train,lr_multi,vectorizer_chosen, col_input= 'portuguese',inplace=False)
-# pred_test_lr_multi = nlp_predict(data_test,lr_multi,vectorizer_chosen, col_input= 'portuguese', inplace=False)
-
-# plot_confusion_matrix(pred_train_lr_multi[y_name], pred_train_lr_multi['prediction'], 'Logistic Regression(Multi) - Train',labels)
-# plot_confusion_matrix(pred_test_lr_multi[y_name], pred_test_lr_multi['prediction'], 'Logistic Regression(Multi) - Test',labels)
-
-# cr_lr_multi_train = classification_report(pred_train_lr[y_name], pred_train_lr['prediction'])
-# print(cr_lr_train)
-
-# cr_lr_multi_test = classification_report(pred_test_lr[y_name], pred_test_lr['prediction'])
-# print(cr_lr_test)
-
-######################## Naive Bayes
-nb_model = MultinomialNB()
-nb_model.fit(X_train_chosen, y_train_chosen)
-
-pred_train_nb = nlp_predict(data_train,nb_model,vectorizer_chosen, col_input= 'portuguese',inplace=False)
-pred_test_nb = nlp_predict(data_test,nb_model,vectorizer_chosen, col_input= 'portuguese', inplace=False)
-
-plot_confusion_matrix(pred_train_nb[y_name], pred_train_nb['prediction'], 'Naive Bayes - Train',labels)
-plot_confusion_matrix(pred_test_nb[y_name], pred_test_nb['prediction'], 'Naive Bayes - Test',labels)
-
-nb_train = classification_report(pred_train_nb[y_name], pred_train_nb['prediction'])
-print(nb_train)
-
-nb_test = classification_report(pred_test_nb[y_name], pred_test_nb['prediction'])
-print(nb_test)
-
-################### saved model
-joblib.dump(lr_model,lr_model_path)
-joblib.dump(nb_model,nb_model_path)
-joblib.dump(vectorizer_chosen,vectorizer_path)
+##################### Train lightgbm
