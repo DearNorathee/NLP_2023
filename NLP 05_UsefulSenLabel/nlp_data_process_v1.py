@@ -18,7 +18,7 @@
     
  """
 
-import spacy
+# import spacy
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -203,7 +203,7 @@ def nlp_make_tfidf_matrix(X,text_col, ngram_range =(1,1),stop_words = [], max_df
     elif isinstance(X,pd.DataFrame):
         X_in = X[text_col]
     else:
-        raise Exception("X should only pd.Series or pd.DataFrame as of now")
+        raise TypeError("X should only pd.Series or pd.DataFrame as of now")
     
     tfidf_vectorizer = TfidfVectorizer(stop_words=stop_words,ngram_range=ngram_range,max_df=max_df)
     X_tfidf = tfidf_vectorizer.fit_transform(X_in)
@@ -270,6 +270,25 @@ def confusion_matrix_adj(y_true, y_accept, y_pred, labels=None):
 
     # Compute confusion matrix
     return confusion_matrix(y_true, adjusted_pred, labels=labels)
+
+
+def plot_confusion_matrix(y_true, y_pred, title,labels = None):
+    
+    if labels is None:
+        cm = confusion_matrix(y_true, y_pred)
+    else:
+        cm = confusion_matrix(y_true, y_pred, labels = labels)
+    plt.figure(figsize=(8, 6))
+    
+    if labels is None:
+        sns.heatmap(cm, annot=True, fmt='g', cmap='Blues', xticklabels=y_true.unique(), yticklabels=y_true.unique())
+    else:
+        sns.heatmap(cm, annot=True, fmt='g', cmap='Blues', xticklabels=labels, yticklabels=labels)
+    
+    plt.title(title)
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.show()
 
 # Example usage
 # y_true = [...]
@@ -392,23 +411,6 @@ else:
     X_test_chosen = X_test_tfidf
     vectorizer_chosen = tfidf_vectorizer
 
-def plot_confusion_matrix(y_true, y_pred, title,labels = None):
-    
-    if labels is None:
-        cm = confusion_matrix(y_true, y_pred)
-    else:
-        cm = confusion_matrix(y_true, y_pred, labels = labels)
-    plt.figure(figsize=(8, 6))
-    
-    if labels is None:
-        sns.heatmap(cm, annot=True, fmt='g', cmap='Blues', xticklabels=y_true.unique(), yticklabels=y_true.unique())
-    else:
-        sns.heatmap(cm, annot=True, fmt='g', cmap='Blues', xticklabels=labels, yticklabels=labels)
-    
-    plt.title(title)
-    plt.xlabel('Predicted')
-    plt.ylabel('Actual')
-    plt.show()
 
 ##################### Train LogisticRegression
 lr_model = LogisticRegression(random_state=random_state)
@@ -430,7 +432,7 @@ data_tfidf = tfidf_vectorizer.transform(data_in)
 prediction = model.predict_proba(data_tfidf)
 labels = model.classes_.tolist()
 
-labels = ['Not Useful','Already Knew','Normal','Useful']
+# labels = ['Not Useful','Already Knew','Normal','Useful']
 
 # cm = confusion_matrix(pred_train_lr[y_name], pred_train_lr['prediction'])
 # cm
