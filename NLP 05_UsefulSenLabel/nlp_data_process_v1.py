@@ -51,7 +51,7 @@ portuguese_stop_words = stopwords.words('portuguese')
 # nlp = spacy.load('pt_core_news_sm')
 
 # Function to perform lemmatization
-
+#%%%
 def lemmatize(text,model):
     doc = model(text)
     lemmatized = " ".join([token.lemma_ for token in doc])
@@ -155,8 +155,7 @@ def ml_upsampling(X_df, y_df, verbose = 1):
     
     
     # Determine the majority class and its count
-    majority_class = y_df.value_counts().idxmax()
-    majority_count = y_df.value_counts().max()
+    # TOFIX01: when y_df is dataframe, it still wrong when do the sampling
     
     if verbose == 0:
         pass
@@ -166,16 +165,22 @@ def ml_upsampling(X_df, y_df, verbose = 1):
         print(y_df.value_counts())
         print()
     
-    
+    y_df_copy = y_df.copy()
     # Initialize the upsampled DataFrames
     X_train_oversampled = X_df.copy()
     y_train_oversampled = y_df.copy()
-
+    
+    if isinstance(y_train_oversampled, pd.DataFrame):
+        y_train_oversampled = y_df_copy.iloc[:,0]
+        
+    majority_class = y_train_oversampled.value_counts().idxmax()
+    majority_count = y_train_oversampled.value_counts().max()
+    
     # Perform manual oversampling for minority classes
-    for label in y_df.unique():
+    for label in y_train_oversampled.unique():
         if label != majority_class:
             samples_to_add = majority_count - y_df.value_counts()[label]
-            indices = y_df[y_df == label].index
+            indices = y_df_copy[y_df_copy == label].index
             random_indices = np.random.choice(indices, samples_to_add, replace=True)
             X_train_oversampled = pd.concat([X_train_oversampled, X_df.loc[random_indices]], axis=0)
             y_train_oversampled = pd.concat([y_train_oversampled, y_df.loc[random_indices]])
@@ -411,6 +416,11 @@ X_train_tfidf, X_test_tfidf = train_test_split(X_tfidf,test_size=0.2, random_sta
 X_train_ngram, X_test_ngram = train_test_split(X_ngram,test_size=0.2, random_state=RANDOM_STATE)
 y_train, y_test = train_test_split(y_data,test_size=0.2, random_state=RANDOM_STATE)
 
+
+# convert y_train, y_test to series
+
+y_train = y_train.iloc[:,0]
+y_test = y_test.iloc[:,0]
 #%%
 
 X_train_oversampled,y_train_oversampled = ml_upsampling(X_train_tfidf, y_train)
@@ -422,21 +432,31 @@ X_train_ngram_oversampled_tfidf = X_train_ngram_oversampled.values
 
 if NGRAM_RANGE:
     if UPSAMPLING:
-        X_train_chosen = X_train_ngram_oversampled
-        y_train_chosen = y_train_ngram_oversampled
+        X_train_balanced_chosen = X_train_ngram_oversampled.copy()
+        y_train_balanced_chosen = y_train_ngram_oversampled.copy()
+        X_train_imbalanced_chosen = X_train_ngram.copy()
+        y_train_imbalanced_chosen = y_train.copy()
+
     else:
-        X_train_chosen = X_ngram
-        y_train_chosen = y_train
+        X_train_balanced_chosen = X_train_ngram.copy()
+        y_train_balanced_chosen = y_train.copy()
+        X_train_imbalanced_chosen = X_train_ngram.copy()
+        y_train_imbalanced_chosen = y_train.copy()
         
     X_test_chosen = X_test_ngram
     vectorizer_chosen = tfidf_vectorizer_ngram
 else:
     if UPSAMPLING:
-        X_train_chosen = X_train_oversampled
-        y_train_chosen = y_train_oversampled
+        X_train_balanced_chosen = X_train_oversampled.copy()
+        y_train_balanced_chosen = y_train_oversampled.copy()
+        X_train_imbalanced_chosen = X_train_tfidf.copy()
+        y_train_imbalanced_chosen = y_train.copy()
     else:
-        X_train_chosen = X_tfidf
-        y_train_chosen = y_train
+        X_train_balanced_chosen = X_train_tfidf.copy()
+        y_train_balanced_chosen = y_train.copy()
+        X_train_imbalanced_chosen = X_train_tfidf.copy()
+        y_train_imbalanced_chosen = y_train.copy()
+
         
     X_test_chosen = X_test_tfidf
     vectorizer_chosen = tfidf_vectorizer
@@ -444,18 +464,19 @@ else:
 
 ##################### Train LogisticRegression
 lr_model = LogisticRegression(random_state=RANDOM_STATE)
-lr_model.fit(X_train_chosen, y_train_chosen)
+lr_model.fit(X_train_balanced_chosen, y_train_balanced_chosen)
 
 # pred_train_lr = nlp_predict(data_train,lr_model,vectorizer_chosen, col_input= X_COL_NAME,inplace=False)
 # pred_test_lr = nlp_predict(data_test,lr_model,vectorizer_chosen, col_input= X_COL_NAME, inplace=False)
 
-pred_train_lr = lr_model.predict(X_train_chosen)
+pred_train_balance_lr = lr_model.predict(X_train_balanced_chosen)
+pred_train_imbalance_lr = lr_model.predict(X_train_imbalanced_chosen)
 pred_test_lr = lr_model.predict(X_test_chosen)
 
 
 # pred_train_lr_prob = nlp_predict_prob(data_train,lr_model,vectorizer_chosen, col_input= X_COL_NAME,inplace=True)
 # pred_test_lr_prob = nlp_predict_prob(data_test,lr_model,vectorizer_chosen, col_input= X_COL_NAME, inplace=False)
-pred_train_lr_prob = lr_model.predict_proba(X_train_chosen)
+pred_train_lr_prob = lr_model.predict_proba(X_train_balanced_chosen)
 pred_test_lr_prob = lr_model.predict_proba(X_test_chosen)
 
 # tfidf_vectorizer = vectorizer_chosen
@@ -471,13 +492,15 @@ labels = model.classes_.tolist()
 # cm = confusion_matrix(pred_train_lr[y_name], pred_train_lr['prediction'])
 # cm
 
-plot_confusion_matrix(pred_train_lr[Y_COL_NAME], pred_train_lr['prediction'], 'Logistic Regression - Train',labels)
-plot_confusion_matrix(pred_test_lr[Y_COL_NAME], pred_test_lr['prediction'], 'Logistic Regression - Test',labels)
+plot_confusion_matrix(y_train_balanced_chosen, pred_train_balance_lr, 'Logistic Regression - Train(Balanced)',labels)
+plot_confusion_matrix(y_train_imbalanced_chosen, pred_train_imbalance_lr, 'Logistic Regression - Train(Original)',labels)
+plot_confusion_matrix(y_test, pred_test_lr, 'Logistic Regression - Test',labels)
 
-cr_lr_train = classification_report(pred_train_lr[Y_COL_NAME], pred_train_lr['prediction'])
+
+cr_lr_train = classification_report(y_train_imbalanced_chosen, pred_train_imbalance_lr)
 print(cr_lr_train)
 
-cr_lr_test = classification_report(pred_test_lr[Y_COL_NAME], pred_test_lr['prediction'])
+cr_lr_test = classification_report(y_test, pred_test_lr)
 print(cr_lr_test)
 
 ##################### LogisticRegression Multi class specified
@@ -500,7 +523,7 @@ print(cr_lr_test)
 
 ######################## Naive Bayes
 nb_model = MultinomialNB()
-nb_model.fit(X_train_chosen, y_train_chosen)
+nb_model.fit(X_train_balanced_chosen, y_train_balanced_chosen)
 
 pred_train_nb = nlp_predict(data_train,nb_model,vectorizer_chosen, col_input= 'portuguese',inplace=False)
 pred_test_nb = nlp_predict(data_test,nb_model,vectorizer_chosen, col_input= 'portuguese', inplace=False)
