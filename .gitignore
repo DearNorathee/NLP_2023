@@ -1,0 +1,56 @@
+
+*.pkl
+*.mp3
+*.png
+*.bak
+*.ini
+*.ubj
+AutogluonModels/ag-20231104_002217/__version__
+*.json
+AutogluonModels/ag-20231104_002600/__version__
+AutogluonModels/ag-20231104_002850/__version__
+*.mkv
+*.txt
+*.srt
+*.wav
+*.joblib
+NLP 06_ffmpeg/__pycache__/ffmpeg_01.cpython-39.pyc
+NLP 06_ffmpeg/__pycache__/ffmpeg_01_test.cpython-39-pytest-7.3.1.pyc
+*.pyc
+NLP 07_Sentence Alignment/book.db
+*.ass
+OutputData/Westworld_S04E01_EN02.xlsx
+OutputData/Westworld_S04E01_EN_.xlsx
+OutputData/Westworld_S04E01_note.xlsm
+OutputData/Westworld_S04E01_note.xlsx
+OutputData/Westworld_S04E01_pd.xlsx
+*.mp4
+OutputData/BigBang_S04E01.xlsx
+OutputData/S03E01.csv
+OutputData/season01.xlsx
+OutputData/subtitle_data.csv
+OutputDatasubtitle_data.csv
+*.spydata
+NLP 09_SenMem Pipeline/season01.xlsm
+NLP 09_SenMem Pipeline/season01.xlsx
+NLP 09_SenMem Pipeline/BigBang S01.xlsx
+NLP 07_Sentence Alignment/BigBang S01_aligned.xlsx
+NLP 07_Sentence Alignment/BigBang_E06_sample.xlsx
+NLP 05_UsefulSenLabel/test_data_2Label.xlsm
+NLP 05_UsefulSenLabel/datacamp code/fake_or_real_news_corrected.xlsm
+NLP 05_UsefulSenLabel/datacamp code/fake_or_real_news.csv
+NLP 05_UsefulSenLabel/BigBangSentenceS06_label_ChatGPT.xlsx
+NLP 05_UsefulSenLabel/BigBangSentenceS06_label_ChatGPT.csv
+NLP 05_UsefulSenLabel/BigBangSentenceS06_label.xlsm
+NLP 03_11LabsBulk/eleven_labs_audio_template_pd.xlsb
+NLP 02_Conjugation/Set02_Present3.xlsm
+NLP 02_Conjugation/Set02_Present3.csv
+*.ini
+*.ini
+*.ini
+*.pkl
+*.pkl
+
+NLP 03_11LabsBulk/
+NLP 03_11LabsBulk/elevenLabsAudioBulk.py
+NLP 05_UsefulSenLabel/data/

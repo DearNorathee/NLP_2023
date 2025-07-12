@@ -307,19 +307,35 @@ def plot_confusion_matrix(y_true, y_pred, title,labels = None):
 
 folder_path = r"C:/Users/Norat/OneDrive/D_Code/Python/Python NLP/NLP 01/NLP 05_UsefulSenLabel"
 folder_Path = Path(folder_path)
+data_out_folder = r"C:\Users\Norat\OneDrive\D_Code\Python\Python NLP\NLP 01\NLP 05_UsefulSenLabel\data"
+
+out_X_tfidf_name = "BigBangSentenceS06_Tfidf_v01.parquet"
+out_X_ngram_name = "BigBangSentenceS06_ngram_v01.parquet"
+out_y_name = "BigBangSentenceS06_y_v01.parquet"
+
+out_X_tfidf_path = data_out_folder + "/" + out_X_tfidf_name
+out_X_ngram_path = data_out_folder + "/" +  out_X_ngram_name
+out_y_path = data_out_folder + "/" +  out_y_name
+
+del out_X_tfidf_name
+del out_X_ngram_name
+del out_y_name
+
+
 df_name = 'BigBangSentenceS06_label_ChatGPT.csv'
 random_state = 42
 upsampling = True
 df_path = folder_Path / df_name
 y_name = 'usefulness'
 ngram_range = (1, 2)
-cv = 5
+CV = 5
 ####################################
 saved_model_folder = Path(r'C:/Users/Norat/OneDrive/D_Code/Python/Python NLP/NLP 01/NLP 05_UsefulSenLabel/saved_models')
 
 lr_model_name = "Linear_Regression_balanced.joblib"
 nb_model_name = "Naive Bayes_balanced"
-vectorizer_name = "TfidfVectorizer"
+vectorizer_tfidf_name = "TfidfVectorizer"
+vectorizer_ngram_name = "NgramVectorizer"
 
 if ".joblib" not in lr_model_name:
     lr_model_name += ".joblib"
@@ -327,14 +343,17 @@ if ".joblib" not in lr_model_name:
 if ".joblib" not in nb_model_name:
     nb_model_name += ".joblib"
     
-if ".joblib" not in vectorizer_name:
-    vectorizer_name += ".joblib"
+if ".joblib" not in vectorizer_tfidf_name:
+    vectorizer_tfidf_name += ".joblib"
+
+if ".joblib" not in vectorizer_ngram_name:
+    vectorizer_ngram_name += ".joblib"
 
 
 lr_model_path = saved_model_folder / lr_model_name
 nb_model_path = saved_model_folder / nb_model_name
-vectorizer_path = saved_model_folder / vectorizer_name
-
+vectorizer_tfidf_path = saved_model_folder / vectorizer_tfidf_name
+vectorizer_ngram_path = saved_model_folder / vectorizer_ngram_name
 #------------------------------
 
 
@@ -350,40 +369,48 @@ data = data[data[y_name].notnull()]
 
 # data['portuguese_lemma' ] = data['portuguese'].apply(lemmatize)
 
-# Split data into training and testing sets
+
+# )
+X_data = data['portuguese']
+y_data = data[['usefulness']]
+
 # X_train, X_test, y_train, y_test = train_test_split(
-#     data['portuguese_lemma'], data['usefulness'], test_size=0.2, random_state=random_state
+#     data['portuguese'], data['usefulness'], test_size=0.2, random_state=random_state
 # )
 
-X_train, X_test, y_train, y_test = train_test_split(
-    data['portuguese'], data['usefulness'], test_size=0.2, random_state=random_state
-)
-
-data_train, data_test = train_test_split(data,test_size=0.2, random_state=random_state)
+# data_train, data_test = train_test_split(data,test_size=0.2, random_state=random_state)
 
 
-X_train_df, tfidf_vectorizer = nlp_make_tfidf_matrix(data_train,text_col='portuguese')
-X_test_tfidf = tfidf_vectorizer.transform(X_test)
-y_train_df = y_train.copy()
+X_tfidf, tfidf_vectorizer = nlp_make_tfidf_matrix(X_data,text_col='portuguese')
+X_ngram, tfidf_vectorizer_ngram = nlp_make_tfidf_matrix(X_data, text_col='portuguese',ngram_range=ngram_range)
 
-vocab01 = tfidf_vectorizer.vocabulary_
+
+X_tfidf.to_parquet(out_X_tfidf_path)
+X_ngram.to_parquet(out_X_ngram_path)
+y_data.to_parquet(out_y_path)
+
+joblib.dump(tfidf_vectorizer, vectorizer_tfidf_path)
+joblib.dump(tfidf_vectorizer_ngram, vectorizer_ngram_path)
+# vocab01 = tfidf_vectorizer.vocabulary_
 
 # # Perform manual oversampling
-X_train_oversampled,y_train_oversampled = ml_upsampling(X_train_df, y_train)
 
-
-
-
-X_train_oversampled_tfidf = X_train_oversampled.values
+#%%
 
 # Initialize the TF-IDF vectorizer with n-grams
-X_train_ngram_df, tfidf_vectorizer_ngram = nlp_make_tfidf_matrix(X_train, text_col='portuguese',ngram_range=ngram_range)
-X_train_ngram = tfidf_vectorizer_ngram.fit_transform(X_train)
-X_test_ngram = tfidf_vectorizer_ngram.transform(X_test)
-y_train_ngram_df = y_train.copy()
+
+# X_train_ngram = tfidf_vectorizer_ngram.fit_transform(X_train)
+# X_test_ngram = tfidf_vectorizer_ngram.transform(X_test)
+# y_train_ngram_df = y_train.copy()
 
 # Perform manual oversampling on data with n-grams
-X_train_ngram_oversampled, y_train_ngram_oversampled = ml_upsampling(X_train_ngram_df, y_train_ngram_df)
+
+
+#%%
+
+X_train_oversampled,y_train_oversampled = ml_upsampling(X_tfidf, y_train)
+X_train_oversampled_tfidf = X_train_oversampled.values
+X_train_ngram_oversampled, y_train_ngram_oversampled = ml_upsampling(X_ngram, y_train_ngram_df)
 
 
 # Convert the oversampled DataFrame back to sparse matrix format for training
@@ -395,7 +422,7 @@ if ngram_range:
         X_train_chosen = X_train_ngram_oversampled
         y_train_chosen = y_train_ngram_oversampled
     else:
-        X_train_chosen = X_train_ngram_df
+        X_train_chosen = X_ngram
         y_train_chosen = y_train
         
     X_test_chosen = X_test_ngram
@@ -405,7 +432,7 @@ else:
         X_train_chosen = X_train_oversampled
         y_train_chosen = y_train_oversampled
     else:
-        X_train_chosen = X_train_df
+        X_train_chosen = X_tfidf
         y_train_chosen = y_train
         
     X_test_chosen = X_test_tfidf
