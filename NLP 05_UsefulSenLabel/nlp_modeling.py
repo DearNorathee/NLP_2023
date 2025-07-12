@@ -1,24 +1,3 @@
-# use env: latest_python for spacy
-# Seems like LogisticRegression is better than MultinomialNB
-
-# hours spend on this project
-# Jan 20, 24: 7.5 hrs
-    # about 40 mins on repackage ml_upsampling,ml_upsampling
-# Jan 21, 24: 4 hrs
-    # doing scoring and model_analyze
-    
-# Jan 28, 24: 1.5 hrs
-# work on nlp_predict_prob
-
-"""
-# NEXT STEP: 
-
-    2) try xgboost, lightgbm, autogluon see if there's an approvement
-    3) write a code to see the distribution of the sentences containing specific word or bigram
-    
- """
-
-# import spacy
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -32,25 +11,6 @@ from scipy.sparse import vstack
 from pathlib import Path
 from sklearn.model_selection import cross_val_score
 import joblib
-
-from nltk.corpus import stopwords
-from pathlib import Path
-
-portuguese_stop_words = stopwords.words('portuguese')
-
-# For downloading stop words
-# import nltk
-# nltk.download('stopwords')
-
-
-# Load data
-
-
-
-# Load the Portuguese language model for spaCy
-# nlp = spacy.load('pt_core_news_sm')
-
-# Function to perform lemmatization
 
 def lemmatize(text,model):
     doc = model(text)
@@ -291,137 +251,26 @@ def plot_confusion_matrix(y_true, y_pred, title,labels = None):
     plt.ylabel('Actual')
     plt.show()
 
-# Example usage
-# y_true = [...]
-# y_accept = [...]
-# y_pred = [...]
-# labels = ['class1', 'class2', ...]
-# cm = confusion_matrix_adj(y_true, y_accept, y_pred, labels=labels)
-
-
-    
-# Example usage
-# Assuming X_train_df is your features DataFrame and y_train_df is your target Series
-# out_x, out_y = ml_upsampling(X_train_df, y_train_df)
-
-    
-
-folder_path = r"C:/Users/Norat/OneDrive/D_Code/Python/Python NLP/NLP 01/NLP 05_UsefulSenLabel"
-folder_Path = Path(folder_path)
-data_out_folder = r"C:\Users\Norat\OneDrive\D_Code\Python\Python NLP\NLP 01\NLP 05_UsefulSenLabel\data"
-
-out_X_tfidf_name = "BigBangSentenceS06_Tfidf_v01.parquet"
-out_X_ngram_name = "BigBangSentenceS06_ngram_v01.parquet"
-out_y_name = "BigBangSentenceS06_y_v01.parquet"
-
-out_X_tfidf_path = data_out_folder + "/" + out_X_tfidf_name
-out_X_ngram_path = data_out_folder + "/" +  out_X_ngram_name
-out_y_path = data_out_folder + "/" +  out_y_name
-
-del out_X_tfidf_name
-del out_X_ngram_name
-del out_y_name
-
-
 df_name = 'BigBangSentenceS06_label_ChatGPT.csv'
 RANDOM_STATE = 42
 UPSAMPLING = True
 df_path = folder_Path / df_name
-Y_COL_NAME = 'usefulness'
-X_COL_NAME = 'portuguese'
+Y_NAME = 'usefulness'
 NGRAM_RANGE = (1, 2)
 CV = 5
-####################################
-saved_model_folder = Path(r'C:/Users/Norat/OneDrive/D_Code/Python/Python NLP/NLP 01/NLP 05_UsefulSenLabel/saved_models')
-
-lr_model_name = "Linear_Regression_balanced.joblib"
-nb_model_name = "Naive Bayes_balanced"
-vectorizer_tfidf_name = "TfidfVectorizer"
-vectorizer_ngram_name = "NgramVectorizer"
-
-if ".joblib" not in lr_model_name:
-    lr_model_name += ".joblib"
-    
-if ".joblib" not in nb_model_name:
-    nb_model_name += ".joblib"
-    
-if ".joblib" not in vectorizer_tfidf_name:
-    vectorizer_tfidf_name += ".joblib"
-
-if ".joblib" not in vectorizer_ngram_name:
-    vectorizer_ngram_name += ".joblib"
 
 
-lr_model_path = saved_model_folder / lr_model_name
-nb_model_path = saved_model_folder / nb_model_name
-vectorizer_tfidf_path = saved_model_folder / vectorizer_tfidf_name
-vectorizer_ngram_path = saved_model_folder / vectorizer_ngram_name
-#------------------------------
-
-
-alarm_path = r"H:\D_Music\Sound Effect positive-massive-logo.mp3"
-
-
-data_ori = pd.read_csv(df_path)
-# Drop specified columns and rows with null 'usefulness'
-data = data_ori.drop(columns=['episode', 'translation'])
-
-# remove row that has no label
-data = data[data[Y_COL_NAME].notnull()]
-
-# data['portuguese_lemma' ] = data['portuguese'].apply(lemmatize)
-
-
-# )
-X_data = data[X_COL_NAME]
-y_data = data[[Y_COL_NAME]]
-
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data['portuguese'], data['usefulness'], test_size=0.2, random_state=random_state
-# )
-
-# data_train, data_test = train_test_split(data,test_size=0.2, random_state=random_state)
-
-
-X_tfidf, tfidf_vectorizer = nlp_make_tfidf_matrix(X_data,text_col=X_COL_NAME)
-X_ngram, tfidf_vectorizer_ngram = nlp_make_tfidf_matrix(X_data, text_col=X_COL_NAME,ngram_range=NGRAM_RANGE)
-
-
-X_tfidf.to_parquet(out_X_tfidf_path)
-X_ngram.to_parquet(out_X_ngram_path)
-y_data.to_parquet(out_y_path)
-
-joblib.dump(tfidf_vectorizer, vectorizer_tfidf_path)
-joblib.dump(tfidf_vectorizer_ngram, vectorizer_ngram_path)
-# vocab01 = tfidf_vectorizer.vocabulary_
-
-# # Perform manual oversampling
-
-#%%
-
-# Initialize the TF-IDF vectorizer with n-grams
-
-# X_train_ngram = tfidf_vectorizer_ngram.fit_transform(X_train)
-# X_test_ngram = tfidf_vectorizer_ngram.transform(X_test)
-# y_train_ngram_df = y_train.copy()
-
-# Perform manual oversampling on data with n-grams
-
-X_train_tfidf, X_test_tfidf = train_test_split(X_tfidf,test_size=0.2, random_state=RANDOM_STATE)
-X_train_ngram, X_test_ngram = train_test_split(X_ngram,test_size=0.2, random_state=RANDOM_STATE)
-y_train, y_test = train_test_split(y_data,test_size=0.2, random_state=RANDOM_STATE)
-
-#%%
-
-X_train_oversampled,y_train_oversampled = ml_upsampling(X_train_tfidf, y_train)
+X_train_oversampled,y_train_oversampled = ml_upsampling(X_tfidf, y_train)
 X_train_oversampled_tfidf = X_train_oversampled.values
-X_train_ngram_oversampled, y_train_ngram_oversampled = ml_upsampling(X_train_ngram, y_train)
+X_train_ngram_oversampled, y_train_ngram_oversampled = ml_upsampling(X_ngram, y_train_ngram_df)
+
+
 # Convert the oversampled DataFrame back to sparse matrix format for training
 X_train_ngram_oversampled_tfidf = X_train_ngram_oversampled.values
 
 
-if NGRAM_RANGE:
-    if UPSAMPLING:
+if ngram_range:
+    if upsampling:
         X_train_chosen = X_train_ngram_oversampled
         y_train_chosen = y_train_ngram_oversampled
     else:
@@ -431,7 +280,7 @@ if NGRAM_RANGE:
     X_test_chosen = X_test_ngram
     vectorizer_chosen = tfidf_vectorizer_ngram
 else:
-    if UPSAMPLING:
+    if upsampling:
         X_train_chosen = X_train_oversampled
         y_train_chosen = y_train_oversampled
     else:
@@ -443,27 +292,23 @@ else:
 
 
 ##################### Train LogisticRegression
-lr_model = LogisticRegression(random_state=RANDOM_STATE)
+lr_model = LogisticRegression(random_state=random_state)
 lr_model.fit(X_train_chosen, y_train_chosen)
 
-# pred_train_lr = nlp_predict(data_train,lr_model,vectorizer_chosen, col_input= X_COL_NAME,inplace=False)
-# pred_test_lr = nlp_predict(data_test,lr_model,vectorizer_chosen, col_input= X_COL_NAME, inplace=False)
-
-pred_train_lr = lr_model.predict(X_train_chosen)
-pred_test_lr = lr_model.predict(X_test_chosen)
+pred_train_lr = nlp_predict(data_train,lr_model,vectorizer_chosen, col_input= 'portuguese',inplace=False)
+pred_test_lr = nlp_predict(data_test,lr_model,vectorizer_chosen, col_input= 'portuguese', inplace=False)
 
 
-# pred_train_lr_prob = nlp_predict_prob(data_train,lr_model,vectorizer_chosen, col_input= X_COL_NAME,inplace=True)
-# pred_test_lr_prob = nlp_predict_prob(data_test,lr_model,vectorizer_chosen, col_input= X_COL_NAME, inplace=False)
-pred_train_lr_prob = lr_model.predict_proba(X_train_chosen)
-pred_test_lr_prob = lr_model.predict_proba(X_test_chosen)
+pred_train_lr_prob = nlp_predict_prob(data_train,lr_model,vectorizer_chosen, col_input= 'portuguese',inplace=True)
+pred_test_lr_prob = nlp_predict_prob(data_test,lr_model,vectorizer_chosen, col_input= 'portuguese', inplace=False)
 
-# tfidf_vectorizer = vectorizer_chosen
-# data_in = data_train[X_COL_NAME]
+
+tfidf_vectorizer = vectorizer_chosen
+data_in = data_train['portuguese']
 model = lr_model
 
-# data_tfidf = tfidf_vectorizer.transform(data_in)
-# prediction = model.predict_proba(data_tfidf)
+data_tfidf = tfidf_vectorizer.transform(data_in)
+prediction = model.predict_proba(data_tfidf)
 labels = model.classes_.tolist()
 
 # labels = ['Not Useful','Already Knew','Normal','Useful']
@@ -471,13 +316,13 @@ labels = model.classes_.tolist()
 # cm = confusion_matrix(pred_train_lr[y_name], pred_train_lr['prediction'])
 # cm
 
-plot_confusion_matrix(pred_train_lr[Y_COL_NAME], pred_train_lr['prediction'], 'Logistic Regression - Train',labels)
-plot_confusion_matrix(pred_test_lr[Y_COL_NAME], pred_test_lr['prediction'], 'Logistic Regression - Test',labels)
+plot_confusion_matrix(pred_train_lr[y_name], pred_train_lr['prediction'], 'Logistic Regression - Train',labels)
+plot_confusion_matrix(pred_test_lr[y_name], pred_test_lr['prediction'], 'Logistic Regression - Test',labels)
 
-cr_lr_train = classification_report(pred_train_lr[Y_COL_NAME], pred_train_lr['prediction'])
+cr_lr_train = classification_report(pred_train_lr[y_name], pred_train_lr['prediction'])
 print(cr_lr_train)
 
-cr_lr_test = classification_report(pred_test_lr[Y_COL_NAME], pred_test_lr['prediction'])
+cr_lr_test = classification_report(pred_test_lr[y_name], pred_test_lr['prediction'])
 print(cr_lr_test)
 
 ##################### LogisticRegression Multi class specified
@@ -505,65 +350,16 @@ nb_model.fit(X_train_chosen, y_train_chosen)
 pred_train_nb = nlp_predict(data_train,nb_model,vectorizer_chosen, col_input= 'portuguese',inplace=False)
 pred_test_nb = nlp_predict(data_test,nb_model,vectorizer_chosen, col_input= 'portuguese', inplace=False)
 
-plot_confusion_matrix(pred_train_nb[Y_COL_NAME], pred_train_nb['prediction'], 'Naive Bayes - Train',labels)
-plot_confusion_matrix(pred_test_nb[Y_COL_NAME], pred_test_nb['prediction'], 'Naive Bayes - Test',labels)
+plot_confusion_matrix(pred_train_nb[y_name], pred_train_nb['prediction'], 'Naive Bayes - Train',labels)
+plot_confusion_matrix(pred_test_nb[y_name], pred_test_nb['prediction'], 'Naive Bayes - Test',labels)
 
-nb_train = classification_report(pred_train_nb[Y_COL_NAME], pred_train_nb['prediction'])
+nb_train = classification_report(pred_train_nb[y_name], pred_train_nb['prediction'])
 print(nb_train)
 
-nb_test = classification_report(pred_test_nb[Y_COL_NAME], pred_test_nb['prediction'])
+nb_test = classification_report(pred_test_nb[y_name], pred_test_nb['prediction'])
 print(nb_test)
 
 ################### saved model
 joblib.dump(lr_model,lr_model_path)
 joblib.dump(nb_model,nb_model_path)
 joblib.dump(vectorizer_chosen,vectorizer_path)
-# nb_model_object is when I used TfidfVectorizer directly
-# nb_model_object = MultinomialNB(random_state=random_state)
-
-
-
-# Train models
-# nb_model.fit(X_train_oversampled_tfidf, y_train_oversampled)
-# nb_model_object.fit(X_train_tfidf, y_train_df)
-# # lr_multinomial.fit(X_train_oversampled_tfidf, y_train_oversampled)
-
-
-# # Predictions
-
-# y_pred_test_nb = nb_model.predict(X_test_tfidf)
-
-# # Evaluate models with n-grams and optimized parameters
-# lr_optimized = LogisticRegression(random_state=random_state, C=10, penalty='l2')
-# nb_optimized = MultinomialNB(alpha=0.1)
-
-# # Train the models on the oversampled training data with n-grams
-# lr_optimized.fit(X_train_ngram_oversampled_tfidf, y_train_ngram_oversampled)
-# nb_optimized.fit(X_train_ngram_oversampled_tfidf, y_train_ngram_oversampled)
-
-# # Make predictions on the test set
-# y_pred_test_lr_optimized = lr_optimized.predict(X_test_ngram)
-# y_pred_test_nb_optimized = nb_optimized.predict(X_test_ngram)
-
-# y_pred_test_nb_tfidf = nb_model_object.predict(X_test_tfidf)
-
-# test01 = nlp_predict(X_test,lr_optimized,tfidf_vectorizer_ngram)
-# test02 = nlp_predict(data_test,lr_optimized,tfidf_vectorizer_ngram)
-# test03 = nlp_predict(data_train,lr_optimized,tfidf_vectorizer_ngram)
-
-# test04 = nlp_predict(data_train,nb_model_object,tfidf_vectorizer, col_input= 'portuguese')
-
-# Function to plot confusion matrix
-
-
-# Plot confusion matrices
-y_series = pd.Series(y_pred_test_nb_tfidf)
-# why it gives me widely wrong asnwer?
-
-# confusion_matrix doesn't work properly when I tried to input TfidfVectorizer in the MultinomialNB
-plot_confusion_matrix(y_test, y_series, 'Naive Bayes (with TfidfVectorizer object) - Test')
-
-
-
-plot_confusion_matrix(y_test, y_pred_test_lr_optimized, 'Logistic Regression (Optimized) - Test')
-plot_confusion_matrix(y_test, y_pred_test_nb_optimized, 'Naive Bayes (Optimized) - Test')
