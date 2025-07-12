@@ -273,7 +273,6 @@ vectorizer_tfidf_path = r"C:/Users/Norat/OneDrive/D_Code/Python/Python NLP/NLP 0
 vectorizer_ngram_path = r"C:/Users/Norat/OneDrive/D_Code/Python/Python NLP/NLP 01/NLP 05_UsefulSenLabel/saved_models/TfidfVectorizer.joblib"
 
 #%%
-
 X_tfidf = pd.read_parquet(X_tfidf_path)
 X_ngram =  pd.read_parquet(X_ngram_path)
 y_data = pd.read_parquet(y_data_path)
